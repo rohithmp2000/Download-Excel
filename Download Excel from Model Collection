@@ -1,0 +1,97 @@
+1)  <MudButton OnClick="DownloadFile"></MudButton>
+
+    <script>
+    window.triggerFileDownload = function (fileName, fileData) {
+                                // Convert Base64 string to a Blob
+                                var byteCharacters = atob(fileData);
+                                var byteNumbers = new Array(byteCharacters.length);
+                                for (var i = 0; i < byteCharacters.length; i++) {
+                                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                                }
+                                var byteArray = new Uint8Array(byteNumbers);
+                                var blob = new Blob([byteArray], { type: 'application/octet-stream' });
+                        
+                                // Create a URL for the Blob
+                                var url = URL.createObjectURL(blob);
+                        
+                                // Create an anchor element for downloading
+                                var anchor = document.createElement('a');
+                                anchor.href = url;
+                                anchor.download = fileName;
+                        
+                                // Programmatically click the anchor to initiate download
+                                anchor.click();
+                        
+                                // Release the object URL
+                                URL.revokeObjectURL(url);
+        }
+    </script>
+
+    @Code{
+
+          private List<Model> collection = new List<Model>();
+          collection = Iservice.GenerateTariffs(Id);
+      
+          private async Task DownloadFile()
+          {
+              var fileName = "MyFile.xlsx";
+              var sheetName = "Sheet1"; // Change the sheet name as needed
+              var fileBytes = GenerateExcelBytes(sheetName);
+          
+              await JSRuntime.InvokeVoidAsync("triggerFileDownload", fileName, Convert.ToBase64String(fileBytes));
+          }
+      
+          private byte[] GenerateExcelBytes(string sheetName)
+          {
+              // Generate your Excel data and file here, specifying the sheet name
+              // You can use libraries like EPPlus or ClosedXML to generate Excel files
+              // Below is just a placeholder method, implement according to your requirements
+          
+              using (var package = new ExcelPackage())
+              {
+                  var worksheet = package.Workbook.Worksheets.Add(sheetName);
+          
+                  // Add column headers
+                  worksheet.Cells[1, 1].Value = "BillNumber";
+                  worksheet.Cells[1, 2].Value = "BillDate";
+                  worksheet.Cells[1, 3].Value = "PassNumber";
+                  worksheet.Cells[1, 4].Value = "ConsigneeName";
+                  worksheet.Cells[1, 5].Value = "BillQuantity";
+                  worksheet.Cells[1, 6].Value = "Amount";
+                  for (int i = 1; i <= 6; i++)
+                  {
+                      worksheet.Cells[1, i].Style.Font.Bold = true;
+                  }
+          
+                  worksheet.Column(2).Style.Numberformat.Format = "dd-MM-yyyy"; // Date format
+                  worksheet.Column(5).Style.Numberformat.Format = "0.00"; // Integer format
+                  worksheet.Column(6).Style.Numberformat.Format = "0.00";
+          
+                  // Add data rows
+                  int row = 2;
+                  foreach (var item in collection)
+                  {
+                      worksheet.Cells[row, 1].Value = item.BillNumber;
+                      worksheet.Cells[row, 2].Value = item.BillDate;
+                      worksheet.Cells[row, 3].Value = item.PassNumber;
+                      worksheet.Cells[row, 4].Value = item.ConsigneeName;
+                      worksheet.Cells[row, 5].Value = item.BillQuantity;
+                      worksheet.Cells[row, 6].Value = item.Amount;
+          
+                      row++;
+                  }
+          
+                  worksheet.Cells[worksheet.Dimension.Address].Style.Border.Top.Style = ExcelBorderStyle.Thin;
+                  worksheet.Cells[worksheet.Dimension.Address].Style.Border.Left.Style = ExcelBorderStyle.Thin;
+                  worksheet.Cells[worksheet.Dimension.Address].Style.Border.Right.Style = ExcelBorderStyle.Thin;
+                  worksheet.Cells[worksheet.Dimension.Address].Style.Border.Bottom.Style = ExcelBorderStyle.Thin;
+          
+                  // Save the Excel package to a memory stream
+                  using (var stream = new MemoryStream())
+                  {
+                      package.SaveAs(stream);
+                      return stream.ToArray();
+                  }
+              }
+          }
+    }
