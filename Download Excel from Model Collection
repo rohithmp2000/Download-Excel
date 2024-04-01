@@ -1,4 +1,10 @@
-1)  <MudButton OnClick="DownloadFile"></MudButton>
+1)  @using OfficeOpenXml;
+    @using System.IO;
+    @using System.Collections.Generic;
+    @using OfficeOpenXml.Style;
+    @inject IJSRuntime JSRuntime
+
+    <MudButton OnClick="DownloadFile"></MudButton>
 
     <script>
     window.triggerFileDownload = function (fileName, fileData) {
